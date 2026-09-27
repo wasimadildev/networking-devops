@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import cors from 'cors';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
-import { env, isProduction } from './config/env.js';
+import { env, isProduction } from './config/app-env.js';
 import { logger } from './shared/logger.js';
 import { NotFoundError } from './shared/errors.js';
 import { requestContext } from './middleware/request-context.js';

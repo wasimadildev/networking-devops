@@ -77,8 +77,9 @@ lsof -nP -iTCP:5432 -sTCP:LISTEN
 # 2. Do the ports this project needs exist? Replace 3000 with 8080 and 5173 to repeat.
 lsof -nP -iTCP:3000 -sTCP:LISTEN
 
-# 3. Does the database exist?
-psql -lqt | cut -d'|' -f1 | grep -w taskflow_dev
+# 3. Does the database exist? Ask postgres directly rather than listing
+#    databases, so the result is one clear yes/no instead of a table of names.
+psql -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = 'taskflow_dev'"
 
 # 4. Is the backend .env real, or still the committed placeholders?
 cd application/backend

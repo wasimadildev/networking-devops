@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { envSchema, KNOWN_PLACEHOLDERS } from '../src/config/env.js';
+import { baseEnvSchema } from '../src/config/env.js';
+import { appEnvSchema, KNOWN_PLACEHOLDERS } from '../src/config/app-env.js';
 
 /**
  * The production secret rules, tested against the schema directly.
@@ -21,7 +22,7 @@ const base = {
   JWT_REFRESH_SECRET: 'b'.repeat(64),
 };
 
-const parse = (overrides: Record<string, string>) => envSchema.safeParse({ ...base, ...overrides });
+const parse = (overrides: Record<string, string>) => appEnvSchema.safeParse({ ...base, ...overrides });
 
 const messageFor = (result: ReturnType<typeof parse>, name: string) =>
   result.error?.issues.find((issue) => issue.path[0] === name)?.message ?? '';
@@ -65,7 +66,7 @@ describe('env schema: production secrets', () => {
   it('allows a placeholder in development, so a fresh clone boots', () => {
     // The opposite failure would be worse in practice: a rule strict enough to
     // block local setup gets worked around with a committed .env.
-    const result = envSchema.safeParse({
+    const result = appEnvSchema.safeParse({
       ...base,
       NODE_ENV: 'development',
       JWT_ACCESS_SECRET: 'replace-with-openssl-rand-base64-48-output',
@@ -77,7 +78,7 @@ describe('env schema: production secrets', () => {
 
 describe('env schema: still enforced outside production', () => {
   it('requires DATABASE_URL in every environment', () => {
-    const result = envSchema.safeParse({ ...base, DATABASE_URL: undefined });
+    const result = appEnvSchema.safeParse({ ...base, DATABASE_URL: undefined });
     expect(result.success).toBe(false);
     expect(messageFor(result, 'DATABASE_URL')).toMatch(/required/i);
   });
@@ -88,9 +89,58 @@ describe('env schema: still enforced outside production', () => {
   });
 
   it('coerces TRUST_PROXY to a hop count rather than a boolean wildcard', () => {
-    const asTrue = envSchema.safeParse({ ...base, TRUST_PROXY: 'true' });
-    const asCount = envSchema.safeParse({ ...base, TRUST_PROXY: '1' });
+    const asTrue = appEnvSchema.safeParse({ ...base, TRUST_PROXY: 'true' });
+    const asCount = appEnvSchema.safeParse({ ...base, TRUST_PROXY: '1' });
     expect(asTrue.success).toBe(true);
     expect(asCount.success).toBe(true);
+  });
+});
+
+/**
+ * The data-tier half. These cases exist because of a real CI failure: the
+ * migration CLI imported the full application schema, so `db:migrate` refused to
+ * run without JWT secrets — which a data-tier tool never reads. A pipeline with
+ * a working DATABASE_URL and no auth configuration failed at startup, before
+ * connecting to anything.
+ */
+describe('base env schema: the migration CLI needs only a database', () => {
+  const dbOnly = { DATABASE_URL: 'postgresql://user:pass@db:5432/taskflow' };
+
+  it('parses with DATABASE_URL alone', () => {
+    // The regression itself. No JWT secrets, no CORS, no PORT.
+    const result = baseEnvSchema.safeParse(dbOnly);
+    expect(result.success, result.success ? '' : JSON.stringify(result.error.issues)).toBe(true);
+  });
+
+  it('does not require any application-tier variable', () => {
+    const parsed = baseEnvSchema.safeParse(dbOnly);
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    // Proves the split: nothing from the app half leaks into the data half.
+    for (const key of ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'CORS_ALLOWED_ORIGINS', 'PORT', 'HOST']) {
+      expect(parsed.data).not.toHaveProperty(key);
+    }
+  });
+
+  it('still requires DATABASE_URL', () => {
+    const result = baseEnvSchema.safeParse({});
+    expect(result.success).toBe(false);
+  });
+
+  it('still applies the connection defaults', () => {
+    const parsed = baseEnvSchema.safeParse(dbOnly);
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    expect(parsed.data.DATABASE_POOL_MAX).toBe(10);
+    expect(parsed.data.DATABASE_SSL).toBe(false);
+    expect(parsed.data.DATABASE_STATEMENT_TIMEOUT_MS).toBe(15_000);
+    expect(parsed.data.LOG_LEVEL).toBe('info');
+  });
+
+  it('does not enforce the production secret rules — it has no secrets to check', () => {
+    // Production mode with no secrets at all must still be valid for the data
+    // half. If this ever fails, the two schemas have been recombined.
+    const result = baseEnvSchema.safeParse({ ...dbOnly, NODE_ENV: 'production' });
+    expect(result.success).toBe(true);
   });
 });

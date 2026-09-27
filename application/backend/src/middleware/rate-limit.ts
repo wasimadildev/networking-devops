@@ -1,5 +1,5 @@
 import rateLimit, { ipKeyGenerator, type Options } from 'express-rate-limit';
-import { env, isTest } from '../config/env.js';
+import { env, isTest } from '../config/app-env.js';
 import { childLogger } from '../shared/logger.js';
 
 const log = childLogger('http.rate-limit');

@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { env } from '../../config/env.js';
+import { env } from '../../config/app-env.js';
 import { withTransaction } from '../../db/pool.js';
 import { hasPgCode, PG_ERROR } from '../../db/pg-errors.js';
 import { ConflictError, InvalidCredentialsError, UnauthenticatedError, ForbiddenError } from '../../shared/errors.js';

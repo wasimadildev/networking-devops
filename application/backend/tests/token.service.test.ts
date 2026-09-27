@@ -10,7 +10,7 @@ import {
   verifyAccessToken,
 } from '../src/modules/auth/token.service.js';
 import { UnauthenticatedError } from '../src/shared/errors.js';
-import { env } from '../src/config/env.js';
+import { env } from '../src/config/app-env.js';
 import { closeDatabase } from './helpers.js';
 
 afterAll(closeDatabase);

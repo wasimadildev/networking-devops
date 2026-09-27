@@ -6,4 +6,4 @@
  * refactor a breaking change.
  */
 export { createApp } from './app.js';
-export { env } from './config/env.js';
+export { env } from './config/app-env.js';

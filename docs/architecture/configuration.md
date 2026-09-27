@@ -1,25 +1,58 @@
 # Configuration
 
-Every backend variable is validated at startup by `src/config/env.ts` with Zod.
-A typo crashes the process at boot rather than becoming `undefined` on a hot path
-three hours later. Two consequences worth knowing before you edit anything:
+Every backend variable is validated at startup by `src/config/env.ts` (data tier
+and logging) and `src/config/app-env.ts` (everything the server serves), both
+with Zod. A typo crashes the process at boot rather than becoming `undefined` on
+a hot path three hours later.
+
+**The two schemas exist because of a real failure.** `db:migrate` is a data-tier
+tool — it applies DDL and reads nothing else. It used to import the full
+application schema, so applying a migration required JWT secrets to be set. A CI
+job with a perfectly good `DATABASE_URL` and no auth configuration failed at
+startup, before connecting to anything:
+
+```
+Invalid environment configuration:
+  - JWT_ACCESS_SECRET: Invalid input: expected string, received undefined
+```
+
+So the split is: **`DATABASE_*`, `LOG_LEVEL`, and `NODE_ENV` are validated by
+everything; `PORT`, `HOST`, `CORS_ALLOWED_ORIGINS`, `JWT_*`, `BCRYPT_COST`,
+`RATE_LIMIT_*`, and `TRUST_PROXY` are validated only by the server.** A pipeline
+running migrations needs `DATABASE_URL` and nothing else.
+
+If a variable is only read on a request path, demanding it before the process can
+open a database connection is stricter than the code needs — and strictness that
+blocks legitimate work gets worked around.
+
+Two consequences worth knowing before you edit anything:
 
 - **The app tier has no default for `DATABASE_URL`.** Without it the process
   refuses to start, which is the point: an app tier that boots with no database
   will take traffic and fail every request.
 - **Placeholders are rejected in production.** `JWT_ACCESS_SECRET` and
-  `JWT_REFRESH_SECRET` must differ, must be long enough, and must not still be the
-  `.env.example` text. A deployment that booted with the committed example secret
-  would accept tokens anyone can forge from the repository.
+  `JWT_REFRESH_SECRET` must differ, must be 48+ characters, and must not be one
+  of the literal `.env.example` values. A deployment that booted with the
+  committed example secret would accept tokens anyone can forge from the
+  repository.
 
-## App tier
+## Shared by the server and the migration CLI
+
+These are in `config/env.ts`, so `npm run db:migrate` needs only `DATABASE_URL`.
 
 | Variable | Default | Notes |
 |---|---|---|
-| `NODE_ENV` | — | `development`, `test`, or `production`. `test` disables rate limiting |
+| `NODE_ENV` | `development` | `development`, `test`, or `production`. `test` disables rate limiting |
+| `LOG_LEVEL` | `info` | structured JSON to stdout at every level |
+
+## App tier
+
+These are in `config/app-env.ts`, so they are required only to serve requests.
+
+| Variable | Default | Notes |
+|---|---|---|
 | `HOST` | `0.0.0.0` | |
 | `PORT` | `8080` | the app tier's only listening port |
-| `LOG_LEVEL` | `info` | structured JSON to stdout at every level |
 
 ## Data tier
 
@@ -93,8 +126,11 @@ lives in `localStorage` — see
 
 1. Add or change it in `backend/.env.example` with the real default or a clear
    placeholder.
-2. Add the schema entry in `backend/src/config/env.ts` — the example file and the
-   schema are supposed to disagree only when one of them is wrong.
+2. Add the schema entry in `backend/src/config/env.ts` or
+   `backend/src/config/app-env.ts` — whichever half reads it. The example file
+   and the schema are supposed to disagree only when one of them is wrong. Put it
+   in `env.ts` only if a data-tier tool needs it; otherwise `app-env.ts`, so the
+   migration CLI never demands a variable it does not read.
 3. Note it here, including why the default is what it is.
 4. If it is secret, confirm the value appears nowhere else: not in `docs/`, not
    in a test fixture, not in a committed `.env`.

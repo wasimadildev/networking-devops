@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { createApp } from './app.js';
-import { env } from './config/env.js';
+import { env } from './config/app-env.js';
 import { closePool, query } from './db/pool.js';
 import { logger } from './shared/logger.js';
 import { unhandledRejectionGuard } from './middleware/error-handler.js';

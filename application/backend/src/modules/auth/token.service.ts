@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import jwt, { type JwtPayload, type SignOptions } from 'jsonwebtoken';
-import { env } from '../../config/env.js';
+import { env } from '../../config/app-env.js';
 import { UnauthenticatedError } from '../../shared/errors.js';
 import type { UserRole } from './types.js';
 
