@@ -1,0 +1,28 @@
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+.env
+.env.local
+.env.*.local
+!.env.example
+
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs/
+*.log
+
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# DevOps artifacts you will build yourself later.
+# Kept ignored on purpose so pipeline scratch space never lands in git.
+.devops/
+*.tfstate
+*.tfstate.backup
+.terraform/

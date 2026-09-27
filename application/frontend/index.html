@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      The meta CSP is a second line of defence, not the only one. A Content-Security-Policy
+      response header from Nginx is authoritative; this one stops an accidental `vite dev`
+      page from loading a remote script. `connect-src 'self'` matters most: without it a
+      compromised dependency could exfiltrate the access token in localStorage to a
+      third-party origin.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <meta name="referrer" content="same-origin" />
+    <title>TaskFlow</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

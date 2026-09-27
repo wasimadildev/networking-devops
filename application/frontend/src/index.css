@@ -1,0 +1,649 @@
+/*
+ * Plain CSS with custom properties. No design system: for an app this size a
+ * dependency would cost more in indirection than it saves in consistency, and
+ * "we picked no framework" is a defensible line on a resume.
+ *
+ * Colours are defined once as tokens and referenced everywhere, so the dark
+ * scheme is a block of overrides rather than a second stylesheet. Contrast is
+ * kept at or above 4.5:1 for body text, which is why the muted tone is a real
+ * grey rather than a low-opacity black.
+ */
+
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --border: #d9dde3;
+  --text: #1a1d21;
+  --text-muted: #5c636e;
+  --primary: #1f5eff;
+  --primary-contrast: #ffffff;
+  --danger: #b3261e;
+  --success: #0f7b3d;
+  --focus: #1f5eff;
+  --radius: 8px;
+  --space: 16px;
+  --shadow: 0 1px 3px rgb(16 24 40 / 8%), 0 1px 2px rgb(16 24 40 / 4%);
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171c;
+    --surface: #1c2027;
+    --border: #333a45;
+    --text: #e7eaee;
+    --text-muted: #a3abb8;
+    --primary: #6b9bff;
+    --primary-contrast: #0b1220;
+    --danger: #ff8a80;
+    --success: #62d99a;
+    --focus: #6b9bff;
+    --shadow: 0 1px 3px rgb(0 0 0 / 40%);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* A visible focus ring on every interactive element. Removing outlines makes the
+   app unusable by keyboard, and `:focus-visible` keeps it off mouse clicks. */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+h1 {
+  font-size: 1.6rem;
+  margin: 0 0 0.5rem;
+}
+
+h2 {
+  font-size: 1.15rem;
+  margin: 0 0 0.5rem;
+}
+
+h3 {
+  font-size: 1rem;
+  margin: 0 0 0.25rem;
+}
+
+a {
+  color: var(--primary);
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--bg);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+/* Available to screen readers, invisible on screen. Used to label an icon-only
+   control or a bare select. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- layout ---------- */
+
+.boot,
+.auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space);
+}
+
+.auth__form {
+  width: min(420px, 100%);
+}
+
+.auth__alt {
+  margin: 0;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.shell__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+  padding: 12px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.shell__brand {
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.shell__nav {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+}
+
+.shell__nav a {
+  text-decoration: none;
+  color: var(--text-muted);
+  padding: 4px 8px;
+  border-radius: var(--radius);
+}
+
+.shell__nav a.active {
+  color: var(--text);
+  background: var(--bg);
+}
+
+.shell__account {
+  position: relative;
+}
+
+.menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  z-index: 10;
+}
+
+.menu a,
+.menu button {
+  padding: 10px 12px;
+  text-align: left;
+  background: none;
+  border: 0;
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.menu a:hover,
+.menu button:hover {
+  background: var(--bg);
+}
+
+.shell__main {
+  padding: 24px;
+}
+
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space);
+  margin-bottom: var(--space);
+  flex-wrap: wrap;
+}
+
+.page__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.page__crumbs {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.page__lede {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+/* ---------- surfaces ---------- */
+
+.card,
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space);
+  box-shadow: var(--shadow);
+}
+
+.panel {
+  margin-bottom: var(--space);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.card--project h2 {
+  margin-top: 0;
+}
+
+/* ---------- states ---------- */
+
+.state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.state--error {
+  border-style: solid;
+  border-color: var(--danger);
+  color: var(--text);
+}
+
+.state__meta {
+  font-size: 0.85rem;
+}
+
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* Respect a reduced-motion preference: a spinner that will not stop is a real
+   problem for someone with vestibular sensitivity. */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.notice {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  color: var(--text);
+}
+
+/* ---------- controls ---------- */
+
+.button {
+  font: inherit;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--text-muted);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button--primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.button--ghost {
+  border-color: transparent;
+  background: none;
+}
+
+.button--danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+
+textarea {
+  resize: vertical;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--bg);
+  color: var(--text-muted);
+}
+
+.field {
+  margin-bottom: 12px;
+}
+
+.field label {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+  color: var(--text-muted);
+}
+
+.field--invalid input,
+.field--invalid select,
+.field--invalid textarea {
+  border-color: var(--danger);
+}
+
+.field__hint {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.field__error,
+.form__error {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: var(--danger);
+}
+
+.form {
+  margin: 0;
+}
+
+.form--inline {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.form__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.confirm {
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  padding: var(--space);
+  background: var(--surface);
+}
+
+/* ---------- board ---------- */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space);
+  align-items: start;
+}
+
+@media (max-width: 800px) {
+  .board {
+    grid-template-columns: 1fr;
+  }
+}
+
+.board__column {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+
+.board__column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.board__column-header h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  text-transform: capitalize;
+}
+
+.board__count {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.board__cards {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.board__add {
+  width: 100%;
+}
+
+.card--task {
+  padding: 12px;
+}
+
+.card--task h3 a {
+  text-decoration: none;
+  color: var(--text);
+}
+
+.task__description {
+  margin: 4px 0 8px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.task__body {
+  white-space: pre-wrap;
+}
+
+.task__meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.task__move {
+  margin-top: 8px;
+}
+
+.task__move-select {
+  padding: 4px 6px;
+  font-size: 0.8rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  text-transform: capitalize;
+  color: var(--text-muted);
+}
+
+.badge--urgent {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.badge--high {
+  border-color: #d08700;
+  color: #d08700;
+}
+
+.badge--low {
+  border-color: var(--text-muted);
+}
+
+/* ---------- lists ---------- */
+
+.meta {
+  display: flex;
+  gap: 20px;
+  margin: 12px 0 0;
+  flex-wrap: wrap;
+}
+
+.meta dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.meta dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+}
+
+.meta__muted {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.members {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.members__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.members__row > div {
+  flex: 1;
+  min-width: 200px;
+}
+
+.members__row select {
+  width: auto;
+}
+
+.comments__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.comments__item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  background: var(--surface);
+}
+
+.comments__meta {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.comments__item p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.comments__actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.activity {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.activity time {
+  margin-left: 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
