@@ -1,0 +1,209 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+
+  # ============================================================
+  # JOB 1 — Static Checks
+  # ============================================================
+  static-checks:
+    name: Static Checks
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            application/backend/package-lock.json
+            application/frontend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: application/backend
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: application/frontend
+        run: npm ci
+
+      - name: Backend typecheck
+        working-directory: application/backend
+        run: npm run typecheck
+
+      - name: Backend lint
+        working-directory: application/backend
+        run: npm run lint
+
+      - name: Frontend typecheck
+        working-directory: application/frontend
+        run: npm run typecheck
+
+      - name: Frontend lint
+        working-directory: application/frontend
+        run: npm run lint
+
+
+  # ============================================================
+  # JOB 2 — Backend Tests + PostgreSQL
+  # ============================================================
+  backend-tests:
+    name: Backend Tests
+
+    needs: static-checks
+
+    runs-on: ubuntu-latest
+
+    env:
+      POSTGRES_USER: taskflow
+      POSTGRES_PASSWORD: taskflow_ci_password
+      POSTGRES_DB: taskflow_test
+      TEST_DATABASE_URL: postgresql://taskflow:taskflow_ci_password@localhost:5432/taskflow_test
+
+    services:
+      postgres:
+        image: postgres:17
+
+        env:
+          POSTGRES_USER: taskflow
+          POSTGRES_PASSWORD: taskflow_ci_password
+          POSTGRES_DB: taskflow_test
+
+        ports:
+          - 5432:5432
+
+        options: >-
+          --health-cmd="pg_isready -U taskflow -d taskflow_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: application/backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: application/backend
+        run: npm ci
+
+      - name: Wait for PostgreSQL
+        run: |
+          echo "Waiting for PostgreSQL..."
+
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB"; then
+              echo "PostgreSQL is ready."
+              exit 0
+            fi
+
+            echo "PostgreSQL is not ready yet..."
+            sleep 2
+          done
+
+          echo "PostgreSQL failed to become ready."
+          exit 1
+
+      - name: Verify test database
+        run: |
+          PGPASSWORD="$POSTGRES_PASSWORD" \
+          psql \
+            -h localhost \
+            -U "$POSTGRES_USER" \
+            -d postgres \
+            -tAc "SELECT datname FROM pg_database WHERE datname = '$POSTGRES_DB';"
+
+      - name: Run backend tests
+        working-directory: application/backend
+        run: npm test
+
+
+  # ============================================================
+  # JOB 3 — Frontend Tests
+  # ============================================================
+  frontend-tests:
+    name: Frontend Tests
+
+    needs: backend-tests
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: application/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: application/frontend
+        run: npm ci
+
+      - name: Run frontend tests
+        working-directory: application/frontend
+        run: npm test
+
+
+  # ============================================================
+  # JOB 4 — Build
+  # ============================================================
+  build:
+    name: Build
+
+    needs: frontend-tests
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            application/backend/package-lock.json
+            application/frontend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: application/backend
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: application/frontend
+        run: npm ci
+
+      - name: Build backend
+        working-directory: application/backend
+        run: npm run build
+
+      - name: Build frontend
+        working-directory: application/frontend
+        run: npm run build
