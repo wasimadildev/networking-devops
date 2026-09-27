@@ -134,6 +134,12 @@ jobs:
             -d postgres \
             -tAc "SELECT datname FROM pg_database WHERE datname = '$POSTGRES_DB';"
 
+      - name: Run database migrations
+        working-directory: application/backend
+        env:
+          DATABASE_URL: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
+        run: npm run db:migrate
+
       - name: Run backend tests
         working-directory: application/backend
         run: npm test
